@@ -1,0 +1,12 @@
+{
+  "useCases": [
+    {
+      "tenant": "TenantA",
+      "screenUrl": "/support"
+    },
+    {
+      "tenant": "TenantB",
+      "screenUrl": "/support"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+
+  backend:
+    build: ./backend
+    container_name: flowbit-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URL=mongodb://admin:password@mongo:27017/flowbit?authSource=admin
+      - MONGO_DB_NAME=flowbit
+      - SECRET_KEY=your-super-secret-jwt-key-change-in-production
+      - N8N_API_URL=http://n8n:5678/webhook/flowbit-ticket
+      - N8N_WEBHOOK_SECRET=secure_webhook_secret_123
+    depends_on:
+      - mongo
+    networks:
+      - app-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  support-tickets-app:
+    build: ./frontend/support-tickets-app
+    container_name: support-tickets-app
+    ports:
+      - "3001:3001"
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000
+    networks:
+      - app-network
+
+  frontend:
+    build: ./frontend/shell
+    container_name: flowbit-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000
+    depends_on:
+      - support-tickets-app
+      - backend
+    networks:
+      - app-network
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=password
+      - WEBHOOK_URL=http://n8n:5678/
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - app-network
+
+volumes:
+  mongo_data:
+  n8n_data:
+
+networks:
+  app-network:
+    driver: bridge
