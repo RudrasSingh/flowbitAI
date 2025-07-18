@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import admin, tickets, webhook, me
 from app import auth
+import uvicorn
+from app.seed_data import seed_data
 
 app = FastAPI()
 
@@ -28,3 +30,12 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+if __name__ == "__main__":
+    # Seed data on startup
+    try:
+        seed_data()
+    except Exception as e:
+        print(f"Database seeding failed: {e}")
+    
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

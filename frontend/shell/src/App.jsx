@@ -4,13 +4,39 @@ import Sidebar from './Sidebar';
 import LoginForm from './login';
 import { fetchScreens } from './api';
 
-// Lazy load with error boundary
-const SupportTicketsApp = React.lazy(() => 
-  import('supportTicketsApp/App').catch(() => {
-    console.error('Failed to load Support Tickets App');
-    return { default: () => <div>Support Tickets App is not available</div> };
-  })
-);
+// Better error boundary for Module Federation
+const SupportTicketsApp = React.lazy(() => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'http://localhost:3001/remoteEntry.js';
+    script.onload = () => {
+      // Give webpack time to register the remote
+      setTimeout(() => {
+        import('supportTicketsApp/App')
+          .then(module => resolve(module))
+          .catch(() => resolve({ 
+            default: () => (
+              <div style={{padding: '20px', textAlign: 'center'}}>
+                <h2>Support Tickets App Unavailable</h2>
+                <p>Please ensure the support tickets service is running on port 3001</p>
+                <button onClick={() => window.location.reload()}>Retry</button>
+              </div>
+            )
+          }));
+      }, 100);
+    };
+    script.onerror = () => resolve({ 
+      default: () => (
+        <div style={{padding: '20px', textAlign: 'center'}}>
+          <h2>Support Tickets App Unavailable</h2>
+          <p>Please ensure the support tickets service is running on port 3001</p>
+          <button onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      )
+    });
+    document.head.appendChild(script);
+  });
+});
 
 const App = () => {
   const [screens, setScreens] = useState([]);
@@ -84,7 +110,7 @@ const App = () => {
         <Sidebar screens={screens} onLogout={handleLogout} />
         <div style={{ flex: 1, padding: '20px' }}>
           {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
-          <Suspense fallback={<div>Loading module...</div>}>
+          <Suspense fallback={<div style={{padding: '20px'}}>Loading Support Tickets...</div>}>
             <Switch>
               <Route path="/support" component={SupportTicketsApp} />
               {screens.map(screen => (
@@ -94,6 +120,16 @@ const App = () => {
                 <div>
                   <h1>Welcome to Flowbit Multitenant App</h1>
                   <p>Select a screen from the sidebar to get started.</p>
+                  <div style={{marginTop: '20px'}}>
+                    <h3>Available Screens:</h3>
+                    <ul>
+                      {screens.map(screen => (
+                        <li key={screen.screenUrl}>
+                          {screen.tenant} - {screen.screenUrl}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </Route>
             </Switch>

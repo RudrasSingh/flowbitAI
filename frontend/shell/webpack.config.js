@@ -51,10 +51,12 @@ module.exports = {
         react: {
           singleton: true,
           requiredVersion: "^17.0.2",
+          eager: false, // Change to false
         },
         "react-dom": {
           singleton: true,
           requiredVersion: "^17.0.2",
+          eager: false, // Change to false
         },
       },
     }),

@@ -30,7 +30,10 @@ services:
       - mongo
     networks:
       - app-network
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: >
+      sh -c "sleep 10 && 
+             python -c 'from app.seed_data import seed_data; seed_data()' &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   support-tickets-app:
     build: ./frontend/support-tickets-app
